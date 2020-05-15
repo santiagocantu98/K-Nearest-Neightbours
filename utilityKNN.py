@@ -46,9 +46,9 @@ def store_data(url,data):
     # array for standard deviation of every feature
     sd = []
     
-    # 80% of the data for training
-    training_size = int(len(x)*.80)
-    # 20% of the data for testing
+    # 95% of the data for training
+    training_size = int(len(x)*.95)
+    # 5% of the data for testing
     testing_size = len(x) - training_size
     # declaration of testing and training data arrays
     testing_data_x = np.zeros([testing_size,8])
@@ -58,11 +58,11 @@ def store_data(url,data):
     # size of data
     data_size = len(x)
     
-    # 20% of the data for testing 
+    # 5% of the data for testing 
     for size in range(testing_size):
         testing_data_x[testing_size-1-size] = x[data_size-1-size]
         testing_data_y[testing_size-1-size] = y[data_size-1-size]
-    # 80% of the data for training
+    # 95% of the data for training
     for size in range(training_size):
         training_data_x[size] = x[size]
         training_data_y[size] = y[size]
@@ -77,24 +77,12 @@ def store_data(url,data):
     training_data_x,mean,sd = scale_features(training_data_x,mean,sd)
     # prints scaled training data
     print_scaled_data(training_data_x,"training")
-    # adds ones and transpose the matrix in order to multiply it by w
-    training_data_x = np.hstack((np.ones((trainingSamples,1)),training_data_x)).T
     #amount of samples and features of training data
     trainingFeatures, trainingSamples = training_data_x.shape
-    # initializes an array with 0,0 for every feature
-    w = initialize_w(training_data_x,trainingFeatures)
 
-    return training_data_x, testing_data_x, training_data_y,testing_data_y,mean,sd,w
+    return training_data_x, testing_data_x, training_data_y,testing_data_y,mean,sd
 
 
-def separate_data(x):
-    """
-    function that separates 80% of the data for training
-    and 20% for testing
-    
-    
-    """
-  
 def scale_features(x,mean,sd):
   """
     function that scalates the x features from the
@@ -122,151 +110,120 @@ def scale_features(x,mean,sd):
       sd.append(sd_data)
       x[:,size] = (x_data - m_data)/ sd_data
   return x,mean,sd
-  
-def initialize_w(x,numberFeatures):
-  """
-    function that initialized an array with 0,0
-    values for each of the features
 
-    Input
-    :param x: numpy matrix
-    :param numberFeatures: int type
-
-    Output
-    :return w: numpy array fill with 0,0 for each feature
-  """
-  # array for w0 and w1 of every feature
-  w=[]
-  # appends 0,0 for every feature
-  for size in range(numberFeatures):
-    w.append([0,0])
-  # converts array into numpy array
-  w = np.asarray(w)
-  return w
-
-def gradient_descent(x,y,w,stopping_criteria,learning_rate):
-  """
-    function that iterates to get the gradient descendent
-    until the l2 norm is bigger than the set stopping
-    criteria = 0.001
-
-    Input
-    :param x: numpy matrix of data
-    :param y: numpy array of data
-    :param stopping criteria: float type variable
-    :param learning rate: float type variable
-
-    Output
-    :return w: returns the w array fill with the optimal w0 and w1 for each feature
-
+def calculate_euclidean_distance(training_x, training_y , testing_data_scaled, testing_y, testing_x):
+    """ 
+        function that calculates the euclidean distance between
+        the testing points and the training data
+        
+        INPUTS
+        param training_x: numpy array
+        param training_y: numpy array
+        param testing_data_scalated: numpy array
+        param testing_y: numpy array
+        
+        OUTPUT
+        Covariance matrix of k = 5, 10 and 20
+        
     """
-  # declare a big l2_norm
-  l2_norm = 100000
-  # size of features and samples
-  numberFeatures, numberSamples = x.shape
-  # declares a variable to know the numbers of iterations 
-  iterations = 0
-  while l2_norm > stopping_criteria:
-    # calculates the cost function for w0 and w1 for every feature
-    cost_function = calculate_gradient_descent(x,y,w,numberSamples,numberFeatures)
-    # reshapes the cost function array in order to multiply by a scalar adding 1 columns
-    cost_function = np.reshape(cost_function,(numberFeatures,1))
-    # calculates the gradient descent with the w0 and w1 of every feature - the learning rate * the cost function
-    w = w-learning_rate*cost_function
-    # euclidean norm, in order to stop the algorithmn
-    l2_norm = calculate_l2_norm(cost_function)
-    # variable counting the iterations
-    iterations = iterations+1
-  return w
+    
+    testing_size = testing_data_scaled.shape[0]
+    training_size = training_x.shape[0]
+    prob = np.arange(testing_size)
+    testingArray5 = np.arange(testing_size)
+    testingArray10 = np.arange(testing_size)
+    testingArray20 = np.arange(testing_size)
+    for i in range(testing_size):
+        array = np.arange(training_size, dtype=float)
+        for j in range(training_size):
+            distance = math.sqrt((training_x[j][0] - testing_data_scaled[i][0])**2 +
+                        (training_x[j][1] - testing_data_scaled[i][1])**2 +
+                        (training_x[j][2] - testing_data_scaled[i][2])**2 +
+                        (training_x[j][3] - testing_data_scaled[i][3])**2 +
+                        (training_x[j][4] - testing_data_scaled[i][4])**2 +
+                        (training_x[j][5] - testing_data_scaled[i][5])**2 +
+                        (training_x[j][6] - testing_data_scaled[i][6])**2 +
+                        (training_x[j][7] - testing_data_scaled[i][7])**2) 
+            array[j] = distance
+        aux = np.argsort(array)
+        diabetes, notDiabetes = compute_conditional_probabilities(aux,5, training_y)
+        prob[i] = diabetes
+        prediction = predict(diabetes, notDiabetes)
+        testingArray5[i] = prediction
+        diabetes, notDiabetes = compute_conditional_probabilities(aux,10, training_y)
+        prediction = predict(diabetes, notDiabetes)
+        testingArray10[i] = prediction
+        diabetes, notDiabetes = compute_conditional_probabilities(aux,20, training_y)
+        prediction = predict(diabetes, notDiabetes)
+        testingArray20[i] = prediction
+    accuracy5,precision5,recall5,specificity5,f1_score5 = covariance_matrix(testingArray5, testing_y,5)
+    accuracy10,precision10,recall10,specificity10,f1_score10 = covariance_matrix(testingArray10, testing_y,10)
+    accuracy20,precision20,recall20,specificity20,f1_score20 = covariance_matrix(testingArray20, testing_y,20)
+    
+    print('------------------------------------------------')
+    print(' Performance metrics ')
+    print('------------------------------------------------')
+    print('K    Accuracy    Precision   Recall   Specificity    F1-score')
+    print("5       %.3f         %.3f      %.3f        %.3f         %.3f" %  (accuracy5,precision5,recall5,specificity5,f1_score5))
+    print("10      %.3f         %.3f      %.3f        %.3f         %.3f" %  (accuracy10,precision10,recall10,specificity10,f1_score10))
+    print("20      %.3f         %.3f      %.3f        %.3f         %.3f" %  (accuracy20,precision20,recall20,specificity20,f1_score20))
+    print('------------------------------------------------')
+    print(' Testing point (features ')
+    print('------------------------------------------------')   
+    print("{}         {}         {}         {}         {}         {}         {}         {}         {}         {}".format('Preg.','Gluc.','BloodPr.','SkinThick.','Insulin','BMI','DiabetesPed.','Age','Prob. Diabetes','Prob. No Diabetes'))
+    for i in range(testing_x.shape[0]):
+        diabetes = prob[i]/5
+        print(diabetes)
+        noDiabetes = 1 - prob[i]/5
+        print("{a:1.2f}         {b:1.2f}         {c:1.2f}              {d:1.2f}             {e:1.2f}             {f:1.2f}          {g:1.2f}                {h:1.2f}            {m:1.2f}                 {k:1.2f}".format(a = testing_x[i][0], b = testing_x[i][1], c = testing_x[i][2],d = testing_x[i][3],e = testing_x[i][4],f = testing_x[i][5],g = testing_x[i][6],h = testing_x[i][7], m = diabetes, k = noDiabetes))
+    
+    
+    
 
-def calculate_gradient_descent(x,y,w,numberSamples,numberFeatures):
-  """
-    function that calculates the hypothesis function and the
-    cost function
-
-    Input
-    :param x: numpy matrix of data
-    :param y: numpy array of data
-    :param numberSamples: int type variable of number of samples in the data
-    :param numberFeatures: int type variable of the number of features in the data
-
-    Output
-    :return cost_function: returns the cost function
-  """
-  # transpose of y data so it can be substracted
-  y = y.T
-  # gets the hypothesis function multiplying transpose of W with X\
-  function = np.matmul(w.T,x)
-  hypothesis_function = 1 / (1 + np.exp(-function))
-  # gets the difference between the hypothesis and y data
-  difference = np.subtract(hypothesis_function,y)
-  # transpose the difference so it can be multiplied
-  difference = difference.T
-  # gets the cost function of the x axis of the matrix
-  cost_function = np.sum(np.matmul(x,difference)/numberSamples, axis=1)
-
-  return cost_function
+def compute_conditional_probabilities(indexArray, k, training_y):
+    """
+        function that calculates the probability of having or not diabetes
+        in women patients with the training and testing data
+        
+        Input
+        param indexArray: numpy array
+        param training_y: numpy array
+        
+        Output
+        returns the number of distances inside the k of diabetes and 
+        notDiabetes
+    """
+    
+    diabetes = 0
+    notDiabetes = 0
+    for n in range(k):
+        result = np.where(indexArray == n)
+        if(training_y[result] == 1):
+            diabetes = diabetes + 1
+        if(training_y[result] == 0):
+            notDiabetes = notDiabetes + 1   
+    return diabetes, notDiabetes
+    
+def predict(diabetes, notDiabetes):
+    """
+        function that predicts if the patient has diabetes or no
+        
+        input
+        param diabetes: int type
+        param notDiabetes: int type
+        
+        output
+        returns 1 if the patient has diabetes, 0 if not and -1 if equal
+    """
+    if(diabetes > notDiabetes):
+        return 1
+    elif (diabetes < notDiabetes):
+        return 0
+    elif (diabetes == notDiabetes):
+        return -1
+    
+    
   
-def predict(w,x,mean,sd):
-  """
-    function that predicts the last mile cost
-    with the testing data using the trained w's
-
-    Input
-    :param w: numpy array with the optimal w0 and w1 for each feature
-    :param x: numpy matrix of testing data scalated
-    :param mean: numpy array with the mean of training data
-    :param sd: numpy array with the standard deviation of training data
-
-    Output
-    :return the predicted value
-  """
-  # number of samples and features
-  numberSamples, numberFeatures = x.shape
-  # adds a row of 1's 
-  x= np.hstack((np.ones((numberSamples,1)),x)).T
-  predicted = np.matmul(w.T,x)
-  size = predicted.shape[1]
-  print_predicted(predicted,"hypothesis")
-  for i in range(size):
-      if(predicted[0][i] < 0):
-          predicted[0][i] = 0
-      elif (predicted[0][i] >= 0):
-          predicted[0][i] = 1
-  print_predicted(predicted,"predicted")
-  return predicted
-
-def calculate_l2_norm(cost_function):
-  """
-    function that calculates the l2 norm with the cost function
-
-    Input
-    :param cost_function: float type variable
-
-    Output
-    :return the l2_norm calculated
-  """
-  return np.sqrt(np.sum(np.matmul(cost_function.T,cost_function)))
-
-
-def print_w(w):
-  """
-    function to print the optimal w
-
-    input
-    :param w: numpy array 
-
-    output
-    prints the optimal w for each feature
-  """
-  c = 0
-  print('------------------------------------------------')
-  print('W parameter')
-  print('------------------------------------------------')
-  for i in zip(w):
-    print('w%s: %s'%(c,i[0][0]))
-    c = c + 1
-
 def print_data(sample,data):
   """
     function to print the training and testing data
@@ -313,30 +270,7 @@ def print_scaled_data(scaled_data,data):
     print(scaled_data)
   
 
-def print_predicted(predicted,data):
-  """
-    function to print the hypothesis and the predicted 
-    value
-
-    input
-    :param predicted: np array
-    :param data: string type
-
-    output
-    prints the hypothesis value or the predicted
-  """
-  if(data == "hypothesis"):
-      print('------------------------------------------------')
-      print('Hypothesis values')
-      print('------------------------------------------------')
-      print(predicted[0])
-  if(data == "predicted"):
-      print('------------------------------------------------')
-      print('Predicted values')
-      print('------------------------------------------------')
-      print(predicted[0])
-
-def covariance_matrix(predicted, y):
+def covariance_matrix(testingArray, testing_y,k):
     """
         function that calculated the true positives, false positives,
         false negatives and true negatives with the predicted values 
@@ -351,15 +285,14 @@ def covariance_matrix(predicted, y):
     false_positive = 0
     false_negative = 0
     true_negative = 0
-    size_y = y.shape[0]
-    for i in range(size_y):
-        if(predicted[0][i] == 1 and y[i] == 1):
+    for i in range(testingArray.shape[0]):
+        if(testingArray[i] == 1 and testing_y[i] == 1):
             true_positive += 1
-        elif(predicted[0][i] == 1 and y[i] == 0):
+        elif(testingArray[i] == 1 and testing_y[i] == 0):
             false_positive += 1
-        elif(predicted[0][i] == 0 and y[i] == 1):
+        elif(testingArray[i] == 0 and testing_y[i] == 1):
             false_negative += 1
-        elif(predicted[0][i] == 0 and y[i] == 0):
+        elif(testingArray[i] == 0 and testing_y[i] == 0):
             true_negative += 1
     
     # calculates the accuracy
@@ -374,10 +307,11 @@ def covariance_matrix(predicted, y):
      # calculates the f1_score
     f1_score = (2*precision*recall)/(precision+recall)
     print_confusion_matrix(true_positive,false_positive,false_negative,
-                            true_negative, accuracy, precision, recall, specificity, f1_score)
+                            true_negative, accuracy, precision, recall, specificity, f1_score,k)
+    return accuracy,precision,recall,specificity,f1_score
     
     
-def print_confusion_matrix(tp,fp,fn,tn, accuracy, precision, recall, specificity, f1_score):
+def print_confusion_matrix(tp,fp,fn,tn, accuracy, precision, recall, specificity, f1_score, k):
     """
         function that prints the covariance matrix
         
@@ -391,7 +325,7 @@ def print_confusion_matrix(tp,fp,fn,tn, accuracy, precision, recall, specificity
         :prints the covariance matrix, accuracy, 
     """
     print('----------------------------------------------------------------------------------')
-    print('Confusion Matrix')
+    print('Confusion Matrix of K = ',k)
     print('----------------------------------------------------------------------------------')
     print('                                                                                  ')
     print('                                                        Actual Class              ')
@@ -406,4 +340,8 @@ def print_confusion_matrix(tp,fp,fn,tn, accuracy, precision, recall, specificity
     print('Recal: ',recall)
     print('Specificity: ',specificity)
     print('F1 score: ',f1_score)
+    
+
+
+
     

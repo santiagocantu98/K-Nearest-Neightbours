@@ -27,19 +27,14 @@ def main():
   # Initializing stopping criteria
   stopping_criteria = 0.01
   # load the data training data from a csv file with an url
-  training_x,testing_x, training_y, testing_y,mean,sd,w = ai.store_data("https://github.com/santiagocantu98/Logistic-Classification/raw/master/diabetes.csv","training")
+  training_x,testing_x, training_y, testing_y,mean,sd= ai.store_data("https://github.com/santiagocantu98/K-Nearest-Neightbours/raw/master/diabetes.csv","training")
+  normal_testing = np.copy(testing_x)
+
   # scalates the features of the testing data
   testing_data_scaled,mean,sd = ai.scale_features(testing_x,mean,sd)
   ai.print_scaled_data(testing_data_scaled,"testing")
-  # store the optimal w's of the training data and trains the algorithm
-  w = ai.gradient_descent(training_x,training_y,w,stopping_criteria,learning_rate)
-  # print the optimal w's
-  ai.print_w(w)
+  ai.calculate_euclidean_distance(training_x, training_y , testing_data_scaled, testing_y,normal_testing)
 
-  # predicts the cost of the last mile with the optimal w's of the trained algorithm with the testing data
-  predicted = ai.predict(w,testing_data_scaled,mean,sd)
-  ai.covariance_matrix(predicted,testing_y)
-  
 
 
 # calls the main function
